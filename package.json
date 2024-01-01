@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Network management tool written in JS",
   "main": "index.js",
+  "type": "module",
   "scripts": {
+    "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,5 +17,9 @@
   "bugs": {
     "url": "https://github.com/IpyZ/netjs/issues"
   },
-  "homepage": "https://github.com/IpyZ/netjs#readme"
+  "homepage": "https://github.com/IpyZ/netjs#readme",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "inquirer": "^9.2.12"
+  }
 }
