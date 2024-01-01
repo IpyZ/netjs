@@ -1,0 +1,19 @@
+{
+  "name": "netjs",
+  "version": "1.0.0",
+  "description": "Network management tool written in JS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IpyZ/netjs.git"
+  },
+  "author": "Filip Śliwa",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IpyZ/netjs/issues"
+  },
+  "homepage": "https://github.com/IpyZ/netjs#readme"
+}
