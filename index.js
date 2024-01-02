@@ -3,7 +3,7 @@ import { networkInterfaces } from 'os';
 import chalk from "chalk";
 import { promisify } from 'util';
 import child_process from 'child_process';
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 
 const exec = promisify (child_process.exec);
 const keypress = async () => {
@@ -14,6 +14,24 @@ const keypress = async () => {
         resolve ();
     }));
 }
+
+var interfaceList = {};
+
+function refreshInterfaces () {
+    interfaceList = {};
+    let upInterfaces = networkInterfaces ();
+    for (let i of Object.keys (upInterfaces)) {
+        interfaceList[i] = upInterfaces[i];
+    }
+
+    readdirSync ('/sys/class/net/').forEach (file => {
+        if (Object.keys (upInterfaces).indexOf (file) == -1) {
+            interfaceList[file] = [{status: readFileSync (`/sys/class/net/${file}/operstate`).toString ('utf-8')}];
+        }
+    });
+}
+
+refreshInterfaces ();
 
 (async function () {
     while (true) {
@@ -37,18 +55,22 @@ const keypress = async () => {
             console.log ('Goodbye');
             break;
         } else if (answers.action == 'List interfaces') {
-            let interfaces = networkInterfaces ();
+            let interfaces = interfaceList;
 
             for (const interfaceName of Object.keys (interfaces)) {
                 console.log (chalk.greenBright (interfaceName) + chalk.white (":"));
                 
                 for (const address of interfaces[interfaceName]) {
-                    console.log (chalk.blueBright ("    type") + chalk.white (": ") + address.family);
-                    console.log (chalk.blueBright ("    address") + chalk.white (": ") + address.address);
-                    console.log (chalk.blueBright ("    netmask") + chalk.white (": ") + address.netmask);
-                    console.log (chalk.blueBright ("    cidr") + chalk.white (": ") + address.cidr);
-                    console.log (chalk.blueBright ("    mac") + chalk.white (": ") + address.mac);
-                    console.log (chalk.blueBright ("    status") + chalk.white (": ") + readFileSync (`/sys/class/net/${interfaceName}/operstate`).toString ('utf-8'));
+                    if (address.status) {
+                        console.log (chalk.blueBright ("    status") + chalk.white (": ") + address.status);
+                    } else {
+                        console.log (chalk.blueBright ("    type") + chalk.white (": ") + address.family);
+                        console.log (chalk.blueBright ("    address") + chalk.white (": ") + address.address);
+                        console.log (chalk.blueBright ("    netmask") + chalk.white (": ") + address.netmask);
+                        console.log (chalk.blueBright ("    cidr") + chalk.white (": ") + address.cidr);
+                        console.log (chalk.blueBright ("    mac") + chalk.white (": ") + address.mac);
+                        console.log (chalk.blueBright ("    status") + chalk.white (": ") + readFileSync (`/sys/class/net/${interfaceName}/operstate`).toString ('utf-8'));
+                    }
                     console.log ();
                 }
             }
@@ -67,7 +89,7 @@ const keypress = async () => {
                     type: 'list',
                     name: 'interface',
                     message: 'Which interface would you like to affect?',
-                    choices: Object.keys (networkInterfaces ())
+                    choices: Object.keys (interfaceList)
                 },
                 {
                     type: 'list',
@@ -85,17 +107,78 @@ const keypress = async () => {
             ]);
 
             await addAddress (addressTemplate.template, addressTemplate.interface);
+            refreshInterfaces ();
         } else if (answers.action == 'Remove ip address from interface') {
             let answers = await inquirer.prompt ([
                 {
                     type: 'list',
                     name: 'interface',
                     message: 'Which interface would you like to affect?',
-                    choices: Object.keys (networkInterfaces ())
+                    choices: Object.keys (interfaceList)
                 }
             ]);
 
             await removeIpAddress (answers.interface);
+            refreshInterfaces ();
+        } else if (answers.action == 'Flush ip addresses from interface') {
+            let answers = await inquirer.prompt ([
+                {
+                    type: 'list',
+                    name: 'interface',
+                    message: 'Which interface would you like to affect?',
+                    choices: Object.keys (interfaceList)
+                }
+            ]);
+
+            try {
+                await exec (`sudo ip a flush dev ${answers.interface}`)
+            } catch (e) {
+                console.log ("Command failed to execute: " + e);
+                console.log ();
+                console.log ('Press any key to continue...');
+                await keypress ();
+                continue;
+            }
+
+            console.log ('Addresses successfully flushed');
+            console.log ();
+            console.log ('Press any key to continue...');
+            await keypress ();
+            refreshInterfaces ();
+        } else if (answers.action == 'Change state of interface') {
+            let answers = await inquirer.prompt ([
+                {
+                    type: 'list',
+                    name: 'interface',
+                    message: 'Which interface would you like to affect?',
+                    choices: Object.keys (interfaceList)
+                },
+                {
+                    type: 'list',
+                    name: 'status',
+                    message: 'On which state sould you like to set this interface?',
+                    choices: [
+                        'up',
+                        'down'
+                    ]
+                }
+            ]);
+
+            try {
+                await exec (`sudo ip link set dev ${answers.interface} ${answers.status}`)
+            } catch (e) {
+                console.log ("Command failed to execute: " + e);
+                console.log ();
+                console.log ('Press any key to continue...');
+                await keypress ();
+                continue;
+            }
+
+            console.log ('Status successfully updated');
+            console.log ();
+            console.log ('Press any key to continue...');
+            await keypress ();
+            refreshInterfaces ();
         }
     }
 }) ();
@@ -238,7 +321,7 @@ async function addAddress (template, selectedInterface) {
 }
 
 async function removeIpAddress (interfaceName) {
-    let interfaces = networkInterfaces ();
+    let interfaces = interfaceList;
     let addresses = [];
 
     if (interfaces[interfaceName].length == 0) {
