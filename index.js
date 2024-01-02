@@ -5,6 +5,8 @@ import { promisify } from 'util';
 import child_process from 'child_process';
 import { readFileSync, readdirSync } from "fs";
 import { addressDefaultTemplates } from "./addressDefaultTemplates.js";
+import { sync as commandExists } from "command-exists";
+
 
 const exec = promisify (child_process.exec);
 const keypress = async () => {
@@ -50,6 +52,7 @@ refreshInterfaces ();
                     'Add ip address to interface',
                     'Remove ip address from interface',
                     'Flush ip addresses from interface',
+                    'Inherit ip addresses from dhcp',
                     'Change state of interface',
                     'Quit'
                 ]
@@ -73,6 +76,9 @@ refreshInterfaces ();
                 break;
             case 'Flush ip addresses from interface':
                 await flushAddressesAction ();
+                break;
+            case 'Inherit ip addresses from dhcp':
+                await dhcpInherit ();
                 break;
             case 'Change state of interface':
                 await changeStateAction ();
@@ -168,8 +174,8 @@ async function flushAddressesAction () {
     try {
         await exec (`sudo ip a flush dev ${answers.interface}`)
     } catch (e) {
-        console.log ("Command failed to execute: " + e);
-        console.log ();
+        console.error (chalk.redBright ("Command failed to execute: " + e));
+        console.log (chalk.white ());
         console.log ('Press any key to continue...');
         await keypress ();
         return;
@@ -205,14 +211,69 @@ async function changeStateAction () {
     try {
         await exec (`sudo ip link set dev ${answers.interface} ${answers.status}`)
     } catch (e) {
-        console.log ("Command failed to execute: " + e);
-        console.log ();
+        console.error (chalk.redBright ("Command failed to execute: " + e));
+        console.log (chalk.white ());
         console.log ('Press any key to continue...');
         await keypress ();
         return;
     }
 
     console.log ('Status successfully updated');
+    console.log ();
+    console.log ('Press any key to continue...');
+    await keypress ();
+    console.clear ();
+    refreshInterfaces ();
+}
+
+async function dhcpInherit () {
+    let interfaceAnswers = await inquirer.prompt ([
+        {
+            type: 'list',
+            name: 'interface',
+            message: 'Which interface would you like to affect?',
+            choices: Object.keys (interfaceList)
+        }
+    ]);
+
+    let dhcpcdExists = commandExists ('dhcpcd');
+    let dhclientExists = commandExists ('dhclient');
+
+    let command = '';
+
+    if (dhcpcdExists && dhclientExists) {
+        let answers = await inquirer.prompt ([
+            {
+                type: 'list',
+                name: 'command',
+                message: 'Which command would you like to use?',
+                choices: ['dhcpcd', 'dhclient']
+            }
+        ]);
+
+        command = `sudo ${answers.command} ${interfaceAnswers.interface}`
+    } else if (dhcpcdExists) command = `sudo dhcpcd ${interfaceAnswers.interface}`;
+    else if (dhclientExists) command = `sudo dhclient ${interfaceAnswers.interface}`;
+    else {
+        console.log (chalk.redBright ('Error: You have to have installed dhcpcd or dhclient to perform this action'));
+        console.log (chalk.white ());
+        console.log ('Press any key to continue...');
+        await keypress ();
+        console.clear ();
+        return;
+    }
+
+    try {
+        await exec (command)
+    } catch (e) {
+        console.error (chalk.redBright ("Command failed to execute: " + e));
+        console.log (chalk.white ());
+        console.log ('Press any key to continue...');
+        await keypress ();
+        return;
+    }
+
+    console.log ('Successfully inherited addresses from dhcp');
     console.log ();
     console.log ('Press any key to continue...');
     await keypress ();
@@ -257,8 +318,8 @@ async function addAddress (template, selectedInterface) {
     try {
         await exec (`sudo ip a add ${address} dev ${selectedInterface}`);
     } catch (e) {
-        console.log ("Command failed to execute: " + e);
-        console.log ();
+        console.error (chalk.redBright ("Command failed to execute: " + e));
+        console.log (chalk.white ());
         console.log ('Press any key to continue...');
         await keypress ();
         return;
@@ -299,8 +360,8 @@ async function removeIpAddress (interfaceName) {
     try {
         await exec (`sudo ip a del ${answers.address} dev ${interfaceName}`);
     } catch (e) {
-        console.log ("Command failed to execute: " + e);
-        console.log ();
+        console.error (chalk.redBright ("Command failed to execute: " + e));
+        console.log (chalk.white ());
         console.log ('Press any key to continue...');
         await keypress ();
         return;
