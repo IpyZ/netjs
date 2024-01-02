@@ -4,6 +4,7 @@ import chalk from "chalk";
 import { promisify } from 'util';
 import child_process from 'child_process';
 import { readFileSync, readdirSync } from "fs";
+import { addressDefaultTemplates } from "./addressDefaultTemplates.js";
 
 const exec = promisify (child_process.exec);
 const keypress = async () => {
@@ -31,6 +32,8 @@ function refreshInterfaces () {
     });
 }
 
+console.clear ();
+
 refreshInterfaces ();
 
 (async function () {
@@ -52,257 +55,198 @@ refreshInterfaces ();
         ]);
 
         if (answers.action == 'Quit') {
-            console.log ('Goodbye');
+            console.clear ();
             break;
-        } else if (answers.action == 'List interfaces') {
-            let interfaces = interfaceList;
+        }
 
-            for (const interfaceName of Object.keys (interfaces)) {
-                console.log (chalk.greenBright (interfaceName) + chalk.white (":"));
-                
-                for (const address of interfaces[interfaceName]) {
-                    if (address.status) {
-                        console.log (chalk.blueBright ("    status") + chalk.white (": ") + address.status);
-                    } else {
-                        console.log (chalk.blueBright ("    type") + chalk.white (": ") + address.family);
-                        console.log (chalk.blueBright ("    address") + chalk.white (": ") + address.address);
-                        console.log (chalk.blueBright ("    netmask") + chalk.white (": ") + address.netmask);
-                        console.log (chalk.blueBright ("    cidr") + chalk.white (": ") + address.cidr);
-                        console.log (chalk.blueBright ("    mac") + chalk.white (": ") + address.mac);
-                        console.log (chalk.blueBright ("    status") + chalk.white (": ") + readFileSync (`/sys/class/net/${interfaceName}/operstate`).toString ('utf-8'));
-                    }
-                    console.log ();
-                }
-            }
-
-            if (Object.keys (interfaces).length == 0) {
-                console.log ('No interfaces to show');
-                console.log ();
-            }
-
-            console.log ('Press any key to continue...');
-            await keypress ();
-        } else if (answers.action == 'Add ip address to interface') {
-
-            let addressTemplate = await inquirer.prompt ([
-                {
-                    type: 'list',
-                    name: 'interface',
-                    message: 'Which interface would you like to affect?',
-                    choices: Object.keys (interfaceList)
-                },
-                {
-                    type: 'list',
-                    name: 'template',
-                    message: 'Which address would you like to add? (only IPv4)',
-                    choices: [
-                        '192.168.0.x/24',
-                        '192.168.1.x/24',
-                        '192.168.x.y/24',
-                        '10.0.0.x/8',
-                        '10.x.y.z/8',
-                        'Custom'
-                    ]
-                }
-            ]);
-
-            await addAddress (addressTemplate.template, addressTemplate.interface);
-            refreshInterfaces ();
-        } else if (answers.action == 'Remove ip address from interface') {
-            let answers = await inquirer.prompt ([
-                {
-                    type: 'list',
-                    name: 'interface',
-                    message: 'Which interface would you like to affect?',
-                    choices: Object.keys (interfaceList)
-                }
-            ]);
-
-            await removeIpAddress (answers.interface);
-            refreshInterfaces ();
-        } else if (answers.action == 'Flush ip addresses from interface') {
-            let answers = await inquirer.prompt ([
-                {
-                    type: 'list',
-                    name: 'interface',
-                    message: 'Which interface would you like to affect?',
-                    choices: Object.keys (interfaceList)
-                }
-            ]);
-
-            try {
-                await exec (`sudo ip a flush dev ${answers.interface}`)
-            } catch (e) {
-                console.log ("Command failed to execute: " + e);
-                console.log ();
-                console.log ('Press any key to continue...');
-                await keypress ();
-                continue;
-            }
-
-            console.log ('Addresses successfully flushed');
-            console.log ();
-            console.log ('Press any key to continue...');
-            await keypress ();
-            refreshInterfaces ();
-        } else if (answers.action == 'Change state of interface') {
-            let answers = await inquirer.prompt ([
-                {
-                    type: 'list',
-                    name: 'interface',
-                    message: 'Which interface would you like to affect?',
-                    choices: Object.keys (interfaceList)
-                },
-                {
-                    type: 'list',
-                    name: 'status',
-                    message: 'On which state sould you like to set this interface?',
-                    choices: [
-                        'up',
-                        'down'
-                    ]
-                }
-            ]);
-
-            try {
-                await exec (`sudo ip link set dev ${answers.interface} ${answers.status}`)
-            } catch (e) {
-                console.log ("Command failed to execute: " + e);
-                console.log ();
-                console.log ('Press any key to continue...');
-                await keypress ();
-                continue;
-            }
-
-            console.log ('Status successfully updated');
-            console.log ();
-            console.log ('Press any key to continue...');
-            await keypress ();
-            refreshInterfaces ();
+        switch (answers.action) {
+            case 'List interfaces':
+                await listInterfacesAction ();
+                break;
+            case 'Add ip address to interface':
+                await addAddressAction ();
+                break;
+            case 'Remove ip address from interface':
+                await removeIpAddressAction ();
+                break;
+            case 'Flush ip addresses from interface':
+                await flushAddressesAction ();
+                break;
+            case 'Change state of interface':
+                await changeStateAction ();
+                break;
         }
     }
 }) ();
+
+async function listInterfacesAction () {
+    let interfaces = interfaceList;
+
+    for (const interfaceName of Object.keys (interfaces)) {
+        console.log (chalk.greenBright (interfaceName) + chalk.white (":"));
+        
+        for (const address of interfaces[interfaceName]) {
+            if (address.status) {
+                console.log (chalk.blueBright ("    status") + chalk.white (": ") + address.status);
+            } else {
+                console.log (chalk.blueBright ("    type") + chalk.white (": ") + address.family);
+                console.log (chalk.blueBright ("    address") + chalk.white (": ") + address.address);
+                console.log (chalk.blueBright ("    netmask") + chalk.white (": ") + address.netmask);
+                console.log (chalk.blueBright ("    cidr") + chalk.white (": ") + address.cidr);
+                console.log (chalk.blueBright ("    mac") + chalk.white (": ") + address.mac);
+                console.log (chalk.blueBright ("    status") + chalk.white (": ") + readFileSync (`/sys/class/net/${interfaceName}/operstate`).toString ('utf-8'));
+            }
+            console.log ();
+        }
+    }
+
+    if (Object.keys (interfaces).length == 0) {
+        console.log ('No interfaces to show');
+        console.log ();
+    }
+
+    console.log ('Press any key to continue...');
+    await keypress ();
+    console.clear ();
+}
+
+async function addAddressAction () {
+    let addressTemplate = await inquirer.prompt ([
+        {
+            type: 'list',
+            name: 'interface',
+            message: 'Which interface would you like to affect?',
+            choices: Object.keys (interfaceList)
+        },
+        {
+            type: 'list',
+            name: 'template',
+            message: 'Which address would you like to add? (only IPv4)',
+            choices: [
+                ...addressDefaultTemplates.map (val => {
+                    return val.address;
+                }),
+                'Custom'
+            ]
+        }
+    ]);
+
+    await addAddress (addressTemplate.template, addressTemplate.interface);
+    console.clear ();
+    refreshInterfaces ();
+}
+
+async function removeIpAddressAction () {
+    let answers = await inquirer.prompt ([
+        {
+            type: 'list',
+            name: 'interface',
+            message: 'Which interface would you like to affect?',
+            choices: Object.keys (interfaceList)
+        }
+    ]);
+
+    await removeIpAddress (answers.interface);
+    console.clear ();
+    refreshInterfaces ();
+}
+
+async function flushAddressesAction () {
+    let answers = await inquirer.prompt ([
+        {
+            type: 'list',
+            name: 'interface',
+            message: 'Which interface would you like to affect?',
+            choices: Object.keys (interfaceList)
+        }
+    ]);
+
+    try {
+        await exec (`sudo ip a flush dev ${answers.interface}`)
+    } catch (e) {
+        console.log ("Command failed to execute: " + e);
+        console.log ();
+        console.log ('Press any key to continue...');
+        await keypress ();
+        return;
+    }
+
+    console.log ('Addresses successfully flushed');
+    console.log ();
+    console.log ('Press any key to continue...');
+    await keypress ();
+    console.clear ();
+    refreshInterfaces ();
+}
+
+async function changeStateAction () {
+    let answers = await inquirer.prompt ([
+        {
+            type: 'list',
+            name: 'interface',
+            message: 'Which interface would you like to affect?',
+            choices: Object.keys (interfaceList)
+        },
+        {
+            type: 'list',
+            name: 'status',
+            message: 'On which state sould you like to set this interface?',
+            choices: [
+                'up',
+                'down'
+            ]
+        }
+    ]);
+
+    try {
+        await exec (`sudo ip link set dev ${answers.interface} ${answers.status}`)
+    } catch (e) {
+        console.log ("Command failed to execute: " + e);
+        console.log ();
+        console.log ('Press any key to continue...');
+        await keypress ();
+        return;
+    }
+
+    console.log ('Status successfully updated');
+    console.log ();
+    console.log ('Press any key to continue...');
+    await keypress ();
+    console.clear ();
+    refreshInterfaces ();
+}
 
 async function addAddress (template, selectedInterface) {
 
     let address = '';
 
-    if (template == '192.168.x.y/24') {
-        let answers = await inquirer.prompt ([
-            {
-                type: 'input',
-                name: 'x',
-                message: 'x (only number from 0 to 255 is accepted): ',
-                validate (value) {
-                    return !isNaN (value) && value >=0 && value <= 255;
-                }
-            },
-            {
-                type: 'input',
-                name: 'y',
-                message: 'y (only number from 0 to 255 is accepted): ',
-                validate (value) {
-                    return !isNaN (value) && value >=0 && value <= 255;
-                }
-            }
-        ]);
+    let indexOfTemplate = addressDefaultTemplates.filter (val => {
+        if (template == val.address) return val;
+    });
 
-        address = `192.168.${answers.x}.${answers.y}/24`;
-    } else if (template == '10.x.y.z/8') {
-        let answers = await inquirer.prompt ([
+    let prompts = [];
+
+    for (const variable of indexOfTemplate[0].variables) {
+        prompts.push (
             {
                 type: 'input',
-                name: 'x',
-                message: 'x (only number from 0 to 255 is accepted): ',
-                validate (value) {
-                    return !isNaN (value) && value >=0 && value <= 255;
-                }
-            },
-            {
-                type: 'input',
-                name: 'y',
-                message: 'y (only number from 0 to 255 is accepted): ',
-                validate (value) {
-                    return !isNaN (value) && value >=0 && value <= 255;
-                }
-            },
-            {
-                type: 'input',
-                name: 'z',
-                message: 'z (only number from 0 to 255 is accepted): ',
+                name: variable,
+                message: variable + ' (only number from 0 to 255 is accepted): ',
                 validate (value) {
                     return !isNaN (value) && value >=0 && value <= 255;
                 }
             }
-        ]);
-
-        address = `10.${answers.x}.${answers.y}.${answers.z}/8`;
-    } else if (template == '10.0.0.x/8') {
-        let answers = await inquirer.prompt ([
-            {
-                type: 'input',
-                name: 'x',
-                message: 'x (only number from 0 to 255 is accepted): ',
-                validate (value) {
-                    return !isNaN (value) && value >=0 && value <= 255;
-                }
-            }
-        ]);
-
-        address = `10.0.0.${answers.x}/8`;
-    } else if (template == '192.168.0.x/24') {
-        let answers = await inquirer.prompt ([
-            {
-                type: 'input',
-                name: 'x',
-                message: 'x (only number from 0 to 255 is accepted): ',
-                validate (value) {
-                    return !isNaN (value) && value >=0 && value <= 255;
-                }
-            }
-        ]);
-
-        address = `192.168.0.${answers.x}/24`;
-    } else if (template == '192.168.1.x/24') {
-        let answers = await inquirer.prompt ([
-            {
-                type: 'input',
-                name: 'x',
-                message: 'x (only number from 0 to 255 is accepted): ',
-                validate (value) {
-                    return !isNaN (value) && value >=0 && value <= 255;
-                }
-            }
-        ]);
-
-        address = `192.168.1.${answers.x}/24`;
-    } else {
-        let answers = await inquirer.prompt ([
-            {
-                type: 'input',
-                name: 'ip',
-                message: 'ip: ',
-                validate (value) {
-                    const pass = value.match (
-                        /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/i
-                    )
-
-                    if (pass) return true;
-                }
-            },
-            {
-                type: 'input',
-                name: 'mask',
-                message: 'cidr netmask (without slash): ',
-                validate (value) {
-                    return !isNaN (value) && value >=0 && value <= 32;
-                }
-            }
-        ]);
-
-        address = answers.ip + '/' + answers.mask;
-
+        );
     }
+
+    let answers = await inquirer.prompt (prompts);
+
+    address = indexOfTemplate[0].address;
+
+    for (const variable of indexOfTemplate[0].variables) {
+        address = address.replace (variable, answers[variable])
+    }
+
 
     try {
         await exec (`sudo ip a add ${address} dev ${selectedInterface}`);
