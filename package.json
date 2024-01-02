@@ -26,5 +26,15 @@
   },
   "bin": {
     "netjs": "index.js"
-  }
+  },
+  "keywords": [
+    "network",
+    "net",
+    "config",
+    "configuration",
+    "admin",
+    "begginers",
+    "cli",
+    "tui"
+  ]
 }
