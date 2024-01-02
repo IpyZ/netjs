@@ -58,7 +58,7 @@ And ofcourse you need Node.JS also: [https://nodejs.org](https://nodejs.org)
 
 Simply type:
 ```
-sudo npm i -g netjs
+sudo npm i -g netjs-cli
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

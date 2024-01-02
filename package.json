@@ -1,5 +1,5 @@
 {
-  "name": "netjs",
+  "name": "netjs-cli",
   "version": "1.0.0",
   "description": "Network management tool written in JS",
   "main": "index.js",
@@ -24,5 +24,7 @@
     "inquirer": "^9.2.12",
     "meow": "^13.0.0"
   },
-  "bin": "index.js"
+  "bin": {
+    "netjs": "index.js"
+  }
 }
