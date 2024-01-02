@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import inquirer from "inquirer";
 import { networkInterfaces } from 'os';
 import chalk from "chalk";
@@ -6,6 +8,17 @@ import child_process from 'child_process';
 import { readFileSync, readdirSync } from "fs";
 import { addressDefaultTemplates } from "./addressDefaultTemplates.js";
 import { sync as commandExists } from "command-exists";
+import meow from 'meow';
+
+const cli = meow(`
+    Usage
+      $ netjs
+      
+      Use arrows to select your option
+      Press enter to accept selected option
+
+    NetJS is a simple CLI software that helps with setting up network interfaces
+`, {importMeta: import.meta});
 
 
 const exec = promisify (child_process.exec);
@@ -136,10 +149,16 @@ async function addAddressAction () {
                 ...addressDefaultTemplates.map (val => {
                     return val.address;
                 }),
-                'Custom'
+                'Custom',
+                'Cancel'
             ]
         }
     ]);
+
+    if (addressTemplate.template == 'Cancel') {
+        console.clear ();
+        return;
+    }
 
     await addAddress (addressTemplate.template, addressTemplate.interface);
     console.clear ();
@@ -152,9 +171,14 @@ async function removeIpAddressAction () {
             type: 'list',
             name: 'interface',
             message: 'Which interface would you like to affect?',
-            choices: Object.keys (interfaceList)
+            choices: [...Object.keys (interfaceList), 'Cancel']
         }
     ]);
+
+    if (answers.interface == 'Cancel') {
+        console.clear ();
+        return;
+    }
 
     await removeIpAddress (answers.interface);
     console.clear ();
@@ -167,9 +191,14 @@ async function flushAddressesAction () {
             type: 'list',
             name: 'interface',
             message: 'Which interface would you like to affect?',
-            choices: Object.keys (interfaceList)
+            choices: [...Object.keys (interfaceList), 'Cancel']
         }
     ]);
+
+    if (answers.interface == 'Cancel') {
+        console.clear ();
+        return;
+    }
 
     try {
         await exec (`sudo ip a flush dev ${answers.interface}`)
@@ -203,10 +232,16 @@ async function changeStateAction () {
             message: 'On which state sould you like to set this interface?',
             choices: [
                 'up',
-                'down'
+                'down',
+                'Cancel'
             ]
         }
     ]);
+
+    if (answers.status == 'Cancel') {
+        console.clear ();
+        return;
+    }
 
     try {
         await exec (`sudo ip link set dev ${answers.interface} ${answers.status}`)
@@ -232,9 +267,14 @@ async function dhcpInherit () {
             type: 'list',
             name: 'interface',
             message: 'Which interface would you like to affect?',
-            choices: Object.keys (interfaceList)
+            choices: [...Object.keys (interfaceList), 'Cancel']
         }
     ]);
+
+    if (interfaceAnswers.interface == 'Cancel') {
+        console.clear ();
+        return;
+    }
 
     let dhcpcdExists = commandExists ('dhcpcd');
     let dhclientExists = commandExists ('dhclient');
