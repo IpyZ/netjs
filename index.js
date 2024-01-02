@@ -36,6 +36,8 @@ console.clear ();
 
 refreshInterfaces ();
 
+// ================= Main loop ================= //
+
 (async function () {
     while (true) {
         let answers = await inquirer.prompt ([
@@ -78,6 +80,8 @@ refreshInterfaces ();
         }
     }
 }) ();
+
+// ================= Actions ================= //
 
 async function listInterfacesAction () {
     let interfaces = interfaceList;
@@ -215,6 +219,8 @@ async function changeStateAction () {
     console.clear ();
     refreshInterfaces ();
 }
+
+// ================= More complex ================= //
 
 async function addAddress (template, selectedInterface) {
 
