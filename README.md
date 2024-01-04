@@ -86,11 +86,10 @@ and move with your arrows. Select option, select additional parameters and the m
 - [x] Flushing ip addresses
 - [x] Inheriting addresses from DHCP
 - [x] Changing state of interface
-- [ ] Exporting configuration to netplan and /etc/network.d
-- [ ] Saving configuration without any network manager installed (make own manager)
-- [ ] Editing gateways
+- [ ] Editing routes
 - [ ] Editing DNS addresses
-- [ ] Multi-language Support
+- [ ] Saving configuration without any network manager installed (make own manager)
+- [ ] Exporting configuration to netplan and /etc/network.d
 - And more in the future
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -141,6 +140,7 @@ Project Link: [https://github.com/IpyZ/netjs](https://github.com/IpyZ/netjs)
 * [Inquirer.js](https://github.com/SBoudrias/Inquirer.js)
 * [chalk](https://www.npmjs.com/package/chalk)
 * [meow](https://www.npmjs.com/package/meow)
+* [command-exists](https://www.npmjs.com/package/command-exists)
 * [README template](https://github.com/othneildrew/Best-README-Template)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
