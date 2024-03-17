@@ -18,5 +18,9 @@ export const addressDefaultTemplates = [
     {
         address: "10.x.y.z/8",
         variables: ["x", "y", "z"]
+    },
+    {
+        address: "a.x.y.z/m",
+        variables: ["a", "x", "y", "z", "m"]
     }
 ]

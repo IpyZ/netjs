@@ -19,7 +19,6 @@ export async function addAddressAction () {
                 ...addressDefaultTemplates.map (val => {
                     return val.address;
                 }),
-                'Custom',
                 'Cancel'
             ]
         }
@@ -46,6 +45,21 @@ async function addAddress (template, selectedInterface) {
     let prompts = [];
 
     for (const variable of indexOfTemplate[0].variables) {
+        if (variable === 'm') {
+            prompts.push (
+                {
+                    type: 'input',
+                    name: variable,
+                    message: variable + ' (only number from 0 to 32 is accepted): ',
+                    validate (value) {
+                        return !isNaN (value) && value >= 0 && value <= 32;
+                    }
+                }
+            );
+
+            continue;
+        }
+
         prompts.push (
             {
                 type: 'input',

@@ -86,10 +86,11 @@ and move with your arrows. Select option, select additional parameters and the m
 - [x] Flushing ip addresses
 - [x] Inheriting addresses from DHCP
 - [x] Changing state of interface
-- [ ] Editing routes
+- [ ] Editing default gateway
 - [ ] Editing DNS addresses
 - [ ] Saving configuration without any network manager installed (make own manager)
 - [ ] Exporting configuration to netplan and /etc/network.d
+- [ ] Editing routes
 - And more in the future
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
