@@ -1,6 +1,6 @@
 import { interfaceList, refreshInterfaces, keypress, exec } from "../tools.js";
 import chalk from "chalk";
-import { addressDefaultTemplates } from "../utils/addressDefaultTemplates.js";
+import { addressDefaultTemplates } from "./addressDefaultTemplates.js";
 import inquirer from "inquirer";
 
 export async function addAddressAction () {
