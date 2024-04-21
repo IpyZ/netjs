@@ -13,6 +13,11 @@ export const keypress = async () => {
     }));
 }
 
+/**
+ * Represents a collection of network interfaces and their associated details.
+ * Each key in the object represents a network interface name, and the value is an array containing the interface details.
+ * @type {Object.<string, Array<{family: string, address: string, netmask: string, cidr: string, mac: string, internal: boolean, status: string}>}
+ */
 export var interfaceList = {};
 
 export function refreshInterfaces () {

@@ -9,6 +9,7 @@ import { removeIpAddressAction } from "./actions/removeAddress.js";
 import { flushAddressesAction } from "./actions/flushAddresses.js";
 import { dhcpInherit } from "./actions/dhcpInherit.js";
 import { changeStateAction } from "./actions/changeState.js";
+import { addDefaultGatewayAction } from "./actions/addDefaultGateway.js";
 
 const cli = meow(`
     Usage
@@ -35,6 +36,7 @@ refreshInterfaces ();
                     'List interfaces',
                     'Add ip address to interface',
                     'Remove ip address from interface',
+                    'Add default gateway to interface',
                     'Flush ip addresses from interface',
                     'Inherit ip addresses from dhcp',
                     'Change state of interface',
@@ -57,6 +59,9 @@ refreshInterfaces ();
                 break;
             case 'Remove ip address from interface':
                 await removeIpAddressAction ();
+                break;
+            case 'Add default gateway to interface':
+                await addDefaultGatewayAction ();
                 break;
             case 'Flush ip addresses from interface':
                 await flushAddressesAction ();
